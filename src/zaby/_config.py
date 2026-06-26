@@ -7,7 +7,7 @@ from typing import Callable, Optional, Union
 from ._types import RetryPolicy
 
 
-DEFAULT_ZABY_API_ORIGIN = "https://genapi.zaby.io"
+DEFAULT_ZABY_API_ORIGIN = "http://192.168.68.61:9080"
 LOCAL_ZABY_API_ORIGIN = "http://localhost:9080"
 
 Environment = str

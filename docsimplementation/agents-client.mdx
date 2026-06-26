@@ -1,0 +1,332 @@
+---
+title: "Agents & Provisioning"
+description: "Create, publish, deploy, and manage agents — plus external apps, runtime tokens, and approvals"
+---
+
+# Agents & Provisioning
+
+The `AgentsClient` manages the full agent lifecycle. Access it via `zaby.agents`.
+
+## Create an agent
+
+<ParamField body="body" type="dict" required>
+  Agent configuration object
+</ParamField>
+<ParamField body="body.name" type="string" required>
+  Display name for the agent
+</ParamField>
+<ParamField body="body.slug" type="string" required>
+  URL-friendly identifier. Must be unique per tenant.
+</ParamField>
+<ParamField body="body.description" type="string">
+  Human-readable description of the agent's purpose
+</ParamField>
+
+```python
+agent = await zaby.agents.create({
+    "name": "Customer Support Agent",
+    "slug": "support-agent",
+    "description": "Handles customer inquiries",
+})
+```
+
+<ResponseField name="id" type="string">
+  Unique agent identifier
+</ResponseField>
+<ResponseField name="status" type="string">
+  Initial status — always <code>"DRAFT"</code>
+</ResponseField>
+<ResponseField name="name" type="string">
+  Display name
+</ResponseField>
+<ResponseField name="slug" type="string">
+  URL identifier
+</ResponseField>
+<ResponseField name="createdAt" type="string">
+  ISO-8601 creation timestamp
+</ResponseField>
+
+```json
+{
+  "id": "a1b2c3d4-...",
+  "name": "Customer Support Agent",
+  "slug": "support-agent",
+  "status": "DRAFT",
+  "createdAt": "2026-06-24T12:00:00Z"
+}
+```
+
+<CardGroup cols={2}>
+  <Card title="Getting Started" icon="rocket" href="/getting-started">
+    Create, publish, and deploy your first agent in 5 minutes.
+  </Card>
+  <Card title="Runtime Client" icon="play" href="/runtime-client">
+    Start runs and stream agent responses.
+  </Card>
+</CardGroup>
+
+---
+
+## Manage agents
+
+<AccordionGroup>
+  <Accordion title="List all agents">
+    ```python
+    agents = await zaby.agents.list()
+    ```
+    Returns an array of agent objects.
+  </Accordion>
+
+  <Accordion title="Get an agent">
+    <ParamField body="agent_id" type="string" required>
+      The agent's unique identifier
+    </ParamField>
+    ```python
+    agent = await zaby.agents.get(agent_id)
+    # {"id": "a1b2c3d4-...", "name": "...", ...}
+    ```
+  </Accordion>
+
+  <Accordion title="Update an agent">
+    ```python
+    await zaby.agents.update(agent_id, {
+        "name": "Updated Name",
+        "description": "New description",
+    })
+    ```
+  </Accordion>
+
+  <Accordion title="Delete an agent">
+    <Warning>
+      Deletion is permanent. Active deployments must be removed first.
+    </Warning>
+    ```python
+    await zaby.agents.delete(agent_id)
+    ```
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Publish and deploy
+
+Agents start in `DRAFT` status. Publishing creates a version snapshot; deploying makes it live.
+
+<Steps>
+  <Step title="Publish">
+    ```python
+    version = await zaby.agents.publish(agent_id)
+    version_id = version["id"]
+    ```
+    <ResponseField name="id" type="string">Version identifier (used for deployment)</ResponseField>
+  </Step>
+
+  <Step title="Deploy">
+    <ParamField body="agent_version_id" type="string" required>
+      Version ID from the publish step
+    </ParamField>
+    <ParamField body="environment" type="string" required>
+      One of <code>"TEST"</code> or <code>"PRODUCTION"</code>
+    </ParamField>
+    ```python
+    deployment = await zaby.deployments.create(agent_id, {
+        "agentVersionId": version_id,
+        "environment": "TEST",
+    })
+    deployment_id = deployment["id"]
+    ```
+  </Step>
+
+  <Step title="Get provisioning details">
+    ```python
+    provisioning = await zaby.deployments.get_provisioning(deployment_id)
+    ```
+  </Step>
+</Steps>
+
+---
+
+## External apps
+
+External apps represent your application that embeds Zaby agents. They bridge deployments to runtime tokens.
+
+### Create
+
+<ParamField body="name" type="string" required>Display name</ParamField>
+<ParamField body="slug" type="string" required>Unique identifier</ParamField>
+<ParamField body="allowedOrigins" type="string[]">CORS origins for browser-based runtime</ParamField>
+<ParamField body="tokenTtlSeconds" type="number">Default TTL for generated tokens</ParamField>
+
+```python
+app = await zaby.external_apps.create({
+    "name": "My Web App",
+    "slug": "my-web-app",
+    "allowedOrigins": ["https://app.example.com"],
+    "tokenTtlSeconds": 600,
+})
+```
+
+### Manage
+
+<AccordionGroup>
+  <Accordion title="List apps">
+    ```python
+    apps = await zaby.external_apps.list({"status": "ACTIVE"})
+    ```
+  </Accordion>
+  <Accordion title="Get app">
+    ```python
+    app = await zaby.external_apps.get(app_id)
+    ```
+  </Accordion>
+  <Accordion title="Update app">
+    ```python
+    await zaby.external_apps.update(app_id, {"name": "Updated Name"})
+    ```
+  </Accordion>
+  <Accordion title="Bind deployment">
+    <ParamField body="deploymentId" type="string" required>Deployment to bind</ParamField>
+    <ParamField body="allowBrowserRuntime" type="boolean">Enable browser-based runtime</ParamField>
+    ```python
+    await zaby.external_apps.bind_deployment(app_id, {
+        "deploymentId": deployment_id,
+        "allowBrowserRuntime": True,
+    })
+    ```
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Runtime tokens
+
+Create disposable JWT tokens for the `ZabyRuntime` client.
+
+<ParamField body="input" type="dict" required>Single object with all parameters</ParamField>
+<ParamField body="input.externalAppId" type="string" required>External app ID</ParamField>
+<ParamField body="input.deploymentId" type="string" required>Deployment ID</ParamField>
+<ParamField body="input.externalUserId" type="string" required>End-user identifier</ParamField>
+<ParamField body="input.externalSessionId" type="string" required>Session identifier</ParamField>
+<ParamField body="input.ttlSeconds" type="number">Token lifespan in seconds (default: 600)</ParamField>
+<ParamField body="input.maxUses" type="number">Maximum uses before token expires</ParamField>
+<ParamField body="input.scopes" type="string[]">Permission scopes for the token</ParamField>
+
+```python
+token = await zaby.runtime_tokens.create({
+    "externalAppId": app_id,
+    "deploymentId": deployment_id,
+    "externalUserId": "user-123",
+    "externalSessionId": "session-456",
+    "ttlSeconds": 600,
+    "maxUses": 20,
+})
+runtime_token = token["token"]
+
+### Record feedback
+
+Record runtime feedback using the runtime token context:
+
+<ParamField body="run_id" type="string" required>Run identifier</ParamField>
+
+```python
+await zaby.runtime_tokens.record_feedback(run_id, {
+    "rating": 5,
+    "comment": "Excellent response!",
+})
+```
+```
+
+---
+
+## Attach tools & knowledge
+
+<AccordionGroup>
+  <Accordion title="Attach MCP tool">
+    ```python
+    await zaby.agents.attach_mcp_tool(agent_id, {"toolId": installation_id})
+    ```
+  </Accordion>
+  <Accordion title="Attach knowledge base">
+    ```python
+    await zaby.agents.attach_knowledge_base(agent_id, {"knowledgeBaseId": kb_id})
+    ```
+  </Accordion>
+  <Accordion title="Attach skill">
+    ```python
+    await zaby.agents.attach_skill(agent_id, {"skillId": skill_id})
+    ```
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Test & run
+
+<AccordionGroup>
+  <Accordion title="Test run (dry-run)">
+    ```python
+    result = await zaby.agents.test_run(agent_id, {"input": "Hello"})
+    ```
+  </Accordion>
+  <Accordion title="Production run">
+    ```python
+    run = await zaby.agents.start_run(agent_id, {"input": "Hello"})
+    run_id = run["runId"]
+    ```
+  </Accordion>
+  <Accordion title="Run progress">
+    ```python
+    progress = await zaby.agents.get_run_progress(run_id)
+    ```
+  </Accordion>
+  <Accordion title="Run events">
+    ```python
+    events = await zaby.agents.list_run_events(run_id, {"limit": 100})
+    ```
+  </Accordion>
+  <Accordion title="Playground tokens">
+    ```python
+    tokens = await zaby.agents.playground_runtime_tokens(agent_id)
+    ```
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Approvals
+
+<ParamField body="run_id" type="string" required>Run identifier</ParamField>
+<ParamField body="approval_id" type="string" required>Approval request identifier</ParamField>
+
+```python
+approvals = await zaby.approvals.list()
+await zaby.approvals.approve(run_id, approval_id)
+await zaby.approvals.reject(run_id, approval_id)
+```
+
+---
+
+## Usage analytics
+
+```python
+usage = await zaby.usage.get_agent_usage({
+    "agentId": agent_id,
+    "from": "2026-01-01",
+    "to": "2026-06-01",
+})
+```
+
+<CardGroup cols={2}>
+  <Card title="MCP Client" icon="puzzle" href="/mcp-client">
+    Manage MCP servers, tools, and installations.
+  </Card>
+  <Card title="Knowledge Bases" icon="database" href="/knowledge-bases-client">
+    Create and manage knowledge bases with documents.
+  </Card>
+  <Card title="Memory Client" icon="hard-drive" href="/memory-client">
+    Store and retrieve agent memory items.
+  </Card>
+  <Card title="Intelligence Client" icon="chart-bar" href="/intelligence-client">
+    Signals, rollups, and improvement tracking.
+  </Card>
+</CardGroup>

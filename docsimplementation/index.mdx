@@ -1,0 +1,74 @@
+---
+title: "Zaby Python SDK"
+description: "Build, deploy, and interact with AI agents — the official Python SDK for the Zaby platform"
+---
+
+# Zaby Python SDK
+
+The official Python SDK for the [Zaby](https://zaby.io) AI Agent Platform. Programmatically create agents, manage deployments, stream runtime responses, and integrate with external tools.
+
+<CardGroup cols={2}>
+  <Card title="Quick Start" icon="rocket" href="/getting-started">
+    Install, authenticate, and run your first agent in under 5 minutes.
+  </Card>
+  <Card title="Configuration" icon="cog" href="/configuration">
+    Timeouts, retries, dynamic auth providers, and environment setup.
+  </Card>
+  <Card title="Client Reference" icon="book-open" href="/agents-client">
+    Full API reference for all clients — agents, runtime, MCP, memory, and more.
+  </Card>
+  <Card title="Error Handling" icon="shield" href="/error-handling">
+    Error types, status codes, retry strategies, and best practices.
+  </Card>
+</CardGroup>
+
+## Installation
+
+```bash
+pip install zaby-sdk
+```
+
+Requires Python 3.10+.
+
+## Minimal Example
+
+```python
+import asyncio
+from zaby import Zaby
+
+async def main():
+    zaby = Zaby(api_key="zaby_pk_...")
+
+    agent = await zaby.agents.create({
+        "name": "my-agent",
+        "slug": "my-agent",
+    })
+    print(f"Agent created: {agent['id']}")
+
+    health = await zaby.health.check()
+    print(f"Server status: {health['status']}")
+
+asyncio.run(main())
+```
+
+## Two Client Modes
+
+The SDK provides two client classes for different contexts:
+
+<CardGroup cols={2}>
+  <Card title="Zaby" icon="key" href="/configuration#authentication">
+    <p>Admin-level operations: create agents, manage deployments, configure MCP servers, create runtime tokens.</p>
+    <p><strong>Auth:</strong> API key (<code>x-zaby-api-key</code>) + optional JWT</p>
+  </Card>
+  <Card title="ZabyRuntime" icon="play" href="/runtime-client">
+    <p>Runtime agent interactions: start runs, stream SSE events, submit feedback and approvals.</p>
+    <p><strong>Auth:</strong> Runtime token JWT (<code>authorization: Bearer</code>)</p>
+  </Card>
+</CardGroup>
+
+## What's Next?
+
+- [Getting Started](/getting-started) — Install, authenticate, and run your first agent
+- [Agents Client](/agents-client) — Full agent lifecycle management
+- [Runtime Client](/runtime-client) — Stream agent responses in real-time
+- [Testing](/testing) — Mock transport for unit testing

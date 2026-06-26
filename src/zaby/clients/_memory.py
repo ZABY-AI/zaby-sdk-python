@@ -5,7 +5,7 @@ from typing import Any, Optional
 from .._transport import ZabyCoreClient
 from .._util import encode_path
 
-AGENTS = "/api/v1/tenant/agents"
+AGENTS = "/api/v1/provisioning/agentic-os/agents"
 
 
 class MemoryClient:

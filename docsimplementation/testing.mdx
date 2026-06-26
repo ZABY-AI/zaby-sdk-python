@@ -1,0 +1,112 @@
+---
+title: "Testing"
+description: "Mock transport for deterministic unit testing without a server"
+---
+
+# Testing
+
+The SDK ships with a `MockTransport` that records requests and returns canned responses — no server required.
+
+## MockTransport
+
+```python
+from zaby import Zaby
+from zaby.mocks import MockTransport
+
+transport = MockTransport()
+zaby = Zaby(api_key="test-key", transport=transport)
+```
+
+### Set Responses
+
+```python
+transport.set_response(
+    method="POST",
+    path="/api/v1/provisioning/agentic-os/agents",
+    status=200,
+    body={"id": "test-agent-id", "status": "DRAFT"},
+)
+```
+
+### Assert Requests
+
+```python
+sent = transport.requests[0]
+assert sent.method == "POST"
+assert sent.path == "/api/v1/provisioning/agentic-os/agents"
+assert sent.body == {"name": "My Agent", "slug": "my-agent"}
+```
+
+### Reset Between Tests
+
+```python
+transport.reset()
+```
+
+## Complete Test Example
+
+```python
+import pytest
+from zaby import Zaby
+from zaby.mocks import MockTransport
+
+@pytest.mark.asyncio
+async def test_create_agent():
+    transport = MockTransport()
+    zaby = Zaby(api_key="test-key", transport=transport)
+
+    transport.set_response(
+        "POST",
+        "/api/v1/provisioning/agentic-os/agents",
+        200,
+        {"id": "agent_123", "name": "My Agent", "status": "DRAFT"},
+    )
+
+    result = await zaby.agents.create({
+        "name": "My Agent",
+        "slug": "my-agent",
+    })
+
+    assert result["id"] == "agent_123"
+    assert result["status"] == "DRAFT"
+    assert transport.requests[0].body["name"] == "My Agent"
+```
+
+## Testing Streaming
+
+Mock SSE events for testing `ZabyRuntime.stream()`:
+
+```python
+import pytest
+from zaby import ZabyRuntime
+from zaby.mocks import MockTransport
+
+@pytest.mark.asyncio
+async def test_stream():
+    transport = MockTransport()
+    runtime = ZabyRuntime(token="test-token", transport=transport)
+
+    transport.set_sse(
+        "GET",
+        "/api/v1/provisioning/managed-agents/runs/run_1/stream",
+        [
+            {"event": "text", "data": {"content": "Hello"}},
+            {"event": "RunFinished", "data": {"runId": "run_1"}},
+        ],
+    )
+
+    messages = []
+    async for event in runtime.runs.stream("run_1"):
+        messages.append(event)
+
+    assert len(messages) == 2
+    assert messages[0].event == "text"
+    assert messages[0].data["content"] == "Hello"
+```
+
+## Best Practices
+
+1. **Reset between tests** — Call `transport.reset()` in a fixture to isolate test state.
+2. **Assert request paths** — Verify the SDK is hitting the correct API endpoint.
+3. **Mock error responses** — Test your error handling by returning 4xx/5xx statuses.
+4. **Use pytest-asyncio** — All SDK methods are async. Mark tests with `@pytest.mark.asyncio`.

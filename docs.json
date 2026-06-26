@@ -1,0 +1,86 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "Zaby Python SDK",
+  "colors": {
+    "primary": "#2563EB",
+    "light": "#60A5FA",
+    "dark": "#1D4ED8"
+  },
+  "favicon": "/favicon.svg",
+  "navigation": {
+    "groups": [
+      {
+        "group": "Getting Started",
+        "pages": [
+          "docsimplementation/index",
+          "docsimplementation/getting-started",
+          "docsimplementation/configuration"
+        ]
+      },
+      {
+        "group": "Clients",
+        "pages": [
+          "docsimplementation/core-clients",
+          "docsimplementation/agents-client",
+          "docsimplementation/runtime-client",
+          "docsimplementation/mcp-client",
+          "docsimplementation/memory-client",
+          "docsimplementation/intelligence-client",
+          "docsimplementation/knowledge-bases-client"
+        ]
+      },
+      {
+        "group": "Guides",
+        "pages": [
+          "docsimplementation/error-handling",
+          "docsimplementation/testing",
+          "docsimplementation/examples"
+        ]
+      }
+    ]
+  },
+  "logo": {
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg"
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "PyPI",
+        "href": "https://pypi.org/project/zaby-sdk/"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "Source",
+      "href": "https://github.com/anomalyco/zaby-sdk-python"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/anomalyco/zaby-sdk-python"
+    }
+  },
+  "openapi": null,
+  "topbarCtaButton": {
+    "type": "button",
+    "name": "Get API Key",
+    "url": "https://platform.zaby.io"
+  },
+  "analytics": {
+    "ga4": null
+  },
+  "background": {
+    "color": {
+      "light": "#FFFFFF",
+      "dark": "#0A0A0B"
+    }
+  },
+  "tabs": [
+    {
+      "name": "SDK Reference",
+      "url": "docsimplementation"
+    }
+  ]
+}

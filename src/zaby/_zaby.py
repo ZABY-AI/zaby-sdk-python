@@ -10,7 +10,11 @@ from .clients._agents import (
     ApprovalsClient,
     DeploymentsClient,
     ExternalAppsClient,
+    RuntimeTokenFamiliesClient,
+    RuntimeTokenGrantsClient,
+    RuntimeTokenPoliciesClient,
     RuntimeTokensClient,
+    RuntimeTokenUsageClient,
     UsageClient,
 )
 from .clients._intelligence import IntelligenceClient
@@ -47,6 +51,10 @@ class Zaby:
         self.deployments = DeploymentsClient(core)
         self.external_apps = ExternalAppsClient(core)
         self.runtime_tokens = RuntimeTokensClient(core)
+        self.runtime_token_families = RuntimeTokenFamiliesClient(core)
+        self.runtime_token_policies = RuntimeTokenPoliciesClient(core)
+        self.runtime_token_grants = RuntimeTokenGrantsClient(core)
+        self.runtime_token_usage = RuntimeTokenUsageClient(core)
         self.knowledge_bases = KnowledgeBasesClient(core)
         self.mcp = McpClient(core)
         self.memory = MemoryClient(core)

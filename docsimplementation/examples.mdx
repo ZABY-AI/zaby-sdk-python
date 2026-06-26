@@ -1,0 +1,225 @@
+---
+title: "Examples"
+description: "Complete end-to-end workflows for common scenarios"
+---
+
+# Examples
+
+## Full Agent Lifecycle
+
+Create, publish, deploy, and generate a runtime token — the complete flow from zero to running agent.
+
+```python
+import asyncio
+from zaby import Zaby, configure_zaby, ZabyGlobalConfig
+
+API_KEY = "zaby_pk_..."
+
+async def main():
+    zaby = Zaby(api_key=API_KEY)
+
+    # 1. Create agent
+    agent = await zaby.agents.create({
+        "name": "Support Agent",
+        "slug": "support-agent",
+        "description": "Handles customer inquiries",
+    })
+    agent_id = agent["id"]
+    print(f"✓ Agent created: {agent_id}")
+
+    # 2. Publish (create version snapshot)
+    version = await zaby.agents.publish(agent_id)
+    version_id = version["id"]
+    print(f"✓ Published: {version_id}")
+
+    # 3. Deploy to test
+    deployment = await zaby.deployments.create(agent_id, {
+        "agentVersionId": version_id,
+        "environment": "TEST",
+    })
+    deployment_id = deployment["id"]
+    print(f"✓ Deployed: {deployment_id}")
+
+    # 4. Create external app
+    app = await zaby.external_apps.create({
+        "name": "My Web App",
+        "slug": "my-web-app",
+        "allowedOrigins": ["http://localhost:3000"],
+        "tokenTtlSeconds": 600,
+    })
+    app_id = app["id"]
+    print(f"✓ External app: {app_id}")
+
+    # 5. Create runtime token
+    token = await zaby.runtime_tokens.create({
+        "externalAppId": app_id,
+        "deploymentId": deployment_id,
+        "externalUserId": "user-1",
+        "externalSessionId": "session-1",
+        "ttlSeconds": 600,
+        "maxUses": 20,
+    })
+    print(f"✓ Runtime token: {token['token']}")
+
+asyncio.run(main())
+```
+
+**Output:**
+
+```
+✓ Agent created: a1b2c3d4-...
+✓ Published: v1_...
+✓ Deployed: dep_...
+✓ External app: app_...
+✓ Runtime token: eyJhbGciOi...
+```
+
+## Runtime Agent Chat
+
+Start a run and stream the agent response in real-time:
+
+```python
+import asyncio
+from zaby import ZabyRuntime
+
+async def main():
+    runtime = ZabyRuntime(token="eyJhbGciOi...")
+
+    # Start a run
+    run = await runtime.runs.start({
+        "input": "What can you help me with?",
+    })
+    run_id = run["runId"]
+
+    # Stream events
+    async for event in runtime.runs.stream(run_id):
+        if event.event == "text":
+            print(event.data["content"], end="", flush=True)
+        elif event.event == "tool_call":
+            print(f"\n⚡ Tool: {event.data['toolName']}")
+        elif event.event == "RunFinished":
+            print()
+
+    # Submit feedback
+    await runtime.feedback.create(run_id, {"rating": 5})
+
+asyncio.run(main())
+```
+
+## MCP Tool Integration
+
+Create an MCP server, install it, and attach it to an agent:
+
+```python
+import asyncio
+from zaby import Zaby
+
+async def main():
+    zaby = Zaby(api_key="zaby_pk_...")
+
+    agent = await zaby.agents.create({
+        "name": "Tool Agent",
+        "slug": "tool-agent",
+    })
+
+    server = await zaby.mcp.create_server({
+        "name": "Web Search",
+        "slug": "web-search",
+        "type": "EXTERNAL",
+        "endpoint": "https://mcp.search.example.com/sse",
+    })
+
+    installation = await zaby.mcp.install_server(server["id"], {
+        "name": "Search Prod",
+        "config": {"api_key": "sk-...", "max_results": 10},
+    })
+
+    await zaby.agents.attach_mcp_tool(agent["id"], {
+        "toolId": installation["id"],
+    })
+
+    print(f"✓ Agent '{agent['name']}' can now use web search")
+
+asyncio.run(main())
+```
+
+## Dynamic Authentication
+
+Use rotating API keys or vault-backed credentials:
+
+```python
+import asyncio
+from zaby import Zaby
+
+class VaultKey:
+    """Simulates a key rotation strategy."""
+    def __init__(self):
+        self._keys = iter(["key_1", "key_2", "key_3"])
+    def __call__(self) -> str:
+        return next(self._keys)
+
+async def main():
+    zaby = Zaby(api_key=VaultKey())
+    health = await zaby.health.check()
+    print(f"Server: {health}")
+
+asyncio.run(main())
+```
+
+<Info>
+  Callables are invoked on every request. Cache the result inside your provider if the source is expensive (e.g., Vault API calls).
+</Info>
+
+## Error Handling with Retries
+
+```python
+import asyncio
+from zaby import Zaby, ZabyGlobalConfig, ZabyNotFoundError
+
+async def main():
+    zaby = Zaby(
+        api_key="zaby_pk_...",
+        config=ZabyGlobalConfig(retries=3),
+    )
+
+    try:
+        agent = await zaby.agents.get("nonexistent-id")
+    except ZabyNotFoundError as e:
+        print(f"Agent not found: {e.status}")
+    finally:
+        await zaby.aclose()
+
+asyncio.run(main())
+```
+
+## Knowledge Base with RAG
+
+```python
+import asyncio
+from zaby import Zaby
+
+async def main():
+    zaby = Zaby(api_key="zaby_pk_...")
+
+    kb = await zaby.knowledge_bases.create({
+        "name": "FAQ",
+        "slug": "faq",
+    })
+
+    await zaby.knowledge_bases.add_documents(kb["id"], {
+        "documents": [
+            {"id": "doc_1", "content": "Refunds take 5-7 business days.",
+             "metadata": {"category": "billing"}},
+            {"id": "doc_2", "content": "Contact support@example.com for help.",
+             "metadata": {"category": "support"}},
+        ],
+    })
+
+    await zaby.agents.attach_knowledge_base(agent_id, {
+        "knowledgeBaseId": kb["id"],
+    })
+
+    print("✓ Knowledge base attached to agent")
+
+asyncio.run(main())
+```

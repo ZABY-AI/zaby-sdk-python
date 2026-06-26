@@ -5,8 +5,9 @@ from typing import Any, Optional
 from .._transport import ZabyCoreClient
 from .._util import encode_path
 
-KBS = "/api/v1/tenant/knowledge-bases"
-KNOWLEDGE_LIBRARY = "/api/v1/tenant/knowledge-library"
+AGENTIC_OS = "/api/v1/provisioning/agentic-os"
+KBS = f"{AGENTIC_OS}/knowledge-bases"
+KNOWLEDGE_LIBRARY = f"{AGENTIC_OS}/knowledge-library"
 
 
 class KnowledgeBasesClient:

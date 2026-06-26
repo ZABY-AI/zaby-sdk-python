@@ -1,0 +1,106 @@
+---
+title: "Intelligence Client"
+description: "List signals, rollups, and manage improvement candidates"
+---
+
+# Intelligence Client
+
+The `IntelligenceClient` provides access to agent analytics signals, rollups, and AI-generated improvement suggestions.
+
+```python
+zaby.intelligence  # → IntelligenceClient
+```
+
+## Signals
+
+Retrieve timestamped analytics events from agent interactions.
+
+```python
+signals = await zaby.intelligence.list_signals({
+    "agentId": "a1b2c3d4-...",
+    "type": "user_feedback",
+    "limit": 100,
+})
+```
+
+<ParamField body="agentId" type="string">Filter by agent</ParamField>
+<ParamField body="type" type="string">Signal type filter</ParamField>
+<ParamField body="limit" type="number">Max results</ParamField>
+
+---
+
+## Rollups
+
+Aggregated metrics derived from raw signals.
+
+```python
+rollups = await zaby.intelligence.list_rollups({
+    "agentId": "a1b2c3d4-...",
+    "granularity": "daily",
+    "metric": "avg_response_time",
+})
+```
+
+<ParamField body="agentId" type="string" required>Agent to query</ParamField>
+<ParamField body="granularity" type="string">One of <code>"hourly"</code>, <code>"daily"</code>, <code>"weekly"</code>, <code>"monthly"</code></ParamField>
+<ParamField body="metric" type="string">Metric name (e.g. <code>"avg_response_time"</code>)</ParamField>
+
+---
+
+## Improvements
+
+AI-generated suggestions for improving agent behavior, based on signal analysis.
+
+### List
+
+```python
+improvements = await zaby.intelligence.list_improvements({
+    "agentId": "a1b2c3d4-...",
+})
+```
+
+### Approve
+
+<ParamField body="candidate_id" type="string" required>Improvement candidate identifier</ParamField>
+
+```python
+await zaby.intelligence.approve_improvement(candidate_id, {
+    "status": "IMPLEMENTED",
+})
+```
+
+### Reject
+
+```python
+await zaby.intelligence.reject_improvement(candidate_id, {
+    "reason": "Not applicable",
+})
+```
+
+---
+
+## Example
+
+```python
+import asyncio
+from zaby import Zaby
+
+async def main():
+    zaby = Zaby(api_key="zaby_pk_...")
+
+    signals = await zaby.intelligence.list_signals({
+        "agentId": "a1b2c3d4-...",
+        "type": "user_feedback",
+    })
+
+    improvements = await zaby.intelligence.list_improvements({
+        "agentId": "a1b2c3d4-...",
+    })
+
+    for imp in improvements:
+        await zaby.intelligence.approve_improvement(imp["id"], {
+            "status": "IMPLEMENTED",
+        })
+
+asyncio.run(main())
+```

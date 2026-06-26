@@ -5,7 +5,7 @@ from typing import Any, Optional
 from .._transport import ZabyCoreClient
 from .._util import encode_path
 
-MCP = "/api/v1/tenant/mcp"
+MCP = "/api/v1/provisioning/agentic-os/mcp"
 
 
 class McpClient:

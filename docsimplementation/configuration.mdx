@@ -1,0 +1,176 @@
+---
+title: "Configuration"
+description: "Client options, authentication, retries, and environment setup"
+---
+
+# Configuration
+
+Configure the SDK globally or per-instance.
+
+<CardGroup cols={2}>
+  <Card title="Getting Started" icon="rocket" href="/getting-started">
+    Quick setup guide.
+  </Card>
+  <Card title="Error Handling" icon="shield" href="/error-handling">
+    Retry policies and error types.
+  </Card>
+</CardGroup>
+
+## Zaby client
+
+The `Zaby` constructor accepts:
+
+<ParamField body="api_key" type="str | () → str | () → Awaitable[str]" required>
+  API key for <code>x-zaby-api-key</code> header. Can be a static string, sync callable, or async callable.
+</ParamField>
+<ParamField body="access_token" type="str | () → str | () → Awaitable[str]">
+  JWT for <code>Authorization: Bearer</code> header. Optional for most provisioning endpoints.
+</ParamField>
+<ParamField body="transport" type="ZabyTransport">
+  Custom transport. Use <code>MockTransport</code> for testing.
+</ParamField>
+<ParamField body="config" type="ZabyGlobalConfig">
+  Per-instance configuration overrides.
+</ParamField>
+
+## Global configuration
+
+Set defaults shared across all client instances:
+
+```python
+from zaby import configure_zaby, ZabyGlobalConfig
+
+configure_zaby(ZabyGlobalConfig(
+    api_origin="https://custom.io",
+    timeout_ms=60_000,
+    retries=3,
+    user_agent="my-app/1.0",
+))
+```
+
+Override on a single instance:
+
+```python
+zaby = Zaby(
+    api_key="zaby_pk_...",
+    config=ZabyGlobalConfig(timeout_ms=120_000),
+)
+```
+
+<Info>
+  Instance config merges over globals — only specify the fields you want to override.
+</Info>
+
+---
+
+## Config fields
+
+<AccordionGroup>
+  <Accordion title="api_origin — Base URL">
+    <ParamField body="type" type="string" default="https://genapi.zaby.io">
+      Base URL for all API requests. Override for local development or custom deployments.
+    </ParamField>
+    ```python
+    ZabyGlobalConfig(api_origin="http://localhost:9080")
+    ```
+  </Accordion>
+
+  <Accordion title="timeout_ms — Request timeout">
+    <ParamField body="type" type="int" default="30000">
+      Maximum time to wait for a response, in milliseconds.
+    </ParamField>
+    ```python
+    ZabyGlobalConfig(timeout_ms=60_000)
+    ```
+  </Accordion>
+
+  <Accordion title="retries — Retry configuration">
+    Configure which requests are retried and how.
+    ```python
+    from zaby import RetryPolicy
+
+    ZabyGlobalConfig(retries=RetryPolicy(
+        attempts=3,
+        retry_methods=["GET", "HEAD", "OPTIONS"],
+        retry_statuses=[408, 429, 500, 502, 503, 504],
+        backoff_ms=lambda attempt: min(100 * 2 ** attempt, 1000),
+    ))
+    ```
+    Integer shorthand — equivalent to the default retry policy above:
+    ```python
+    ZabyGlobalConfig(retries=3)
+    ```
+  </Accordion>
+
+  <Accordion title="user_agent — Custom User-Agent">
+    ```python
+    ZabyGlobalConfig(user_agent="my-app/1.0")
+    ```
+  </Accordion>
+
+  <Accordion title="environment — Environment preset">
+    <ParamField body="type" type="string" default="production">
+      Sets a preset origin. <code>"local"</code> → <code>http://localhost:9080</code>
+    </ParamField>
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Retry policy
+
+<ParamField body="attempts" type="int" default="0">Maximum retry attempts</ParamField>
+<ParamField body="retry_methods" type="string[]" default='["GET", "HEAD", "OPTIONS"]'>HTTP methods eligible for retry</ParamField>
+<ParamField body="retry_statuses" type="int[]" default="[408, 429, 500, 502, 503, 504]">Status codes that trigger a retry</ParamField>
+<ParamField body="backoff_ms" type="callable" default="exponential 100ms–1s">Delay function: <code>lambda attempt: min(100 * 2**attempt, 1000)</code></ParamField>
+
+<Warning>
+  Only idempotent methods (GET, HEAD, OPTIONS) are retried by default. POST and other mutating methods are not retried to prevent duplicate operations.
+</Warning>
+
+---
+
+## Authentication providers
+
+Credentials can be static strings, lazy callables, or async callables:
+
+```python
+# Static string
+zaby = Zaby(api_key="zaby_pk_static_key")
+
+# Lazy — called on every request
+zaby = Zaby(api_key=lambda: get_current_key())
+
+# Async
+async def key_provider() -> str:
+    return await fetch_key_from_vault()
+zaby = Zaby(api_key=key_provider)
+```
+
+---
+
+## Environment variables
+
+```bash
+# .env or shell
+export ZABY_API_ORIGIN=http://192.168.68.61:9080
+export ZABY_ENVIRONMENT=local
+```
+
+<Info>
+  Explicit <code>api_origin</code> always takes precedence over environment presets.
+</Info>
+
+---
+
+## ZabyRuntime options
+
+<ParamField body="token" type="str | () → str | () → Awaitable[str]" required>
+  JWT runtime token for <code>Authorization: Bearer</code>
+</ParamField>
+<ParamField body="transport" type="ZabyTransport">
+  Custom transport for testing.
+</ParamField>
+<ParamField body="config" type="ZabyGlobalConfig">
+  Runtime-specific config overrides.
+</ParamField>

@@ -1,0 +1,138 @@
+---
+title: "Getting Started"
+description: "Install the SDK, authenticate, and create your first agent"
+---
+
+# Getting Started
+
+Install the Zaby Python SDK and make your first API call in under 5 minutes.
+
+<CardGroup cols={2}>
+  <Card title="Reference" icon="book-open" href="/agents-client">
+    Full API reference for all clients.
+  </Card>
+  <Card title="Configuration" icon="cog" href="/configuration">
+    Timeouts, retries, auth providers.
+  </Card>
+</CardGroup>
+
+## Prerequisites
+
+- Python 3.10 or later
+- A Zaby account with an API key (`zaby_pk_...`)
+
+---
+
+## Install
+
+```bash
+pip install zaby-sdk
+```
+
+---
+
+## Create a client
+
+<Steps>
+  <Step title="Create an API key">
+    Generate an API key in the [Zaby dashboard](https://platform.zaby.io). Keys start with `zaby_pk_`.
+  </Step>
+
+  <Step title="Initialize the client">
+    ```python
+    from zaby import Zaby
+
+    zaby = Zaby(api_key="zaby_pk_your_key_here")
+    ```
+  </Step>
+
+  <Step title="Verify the connection">
+    ```python
+    health = await zaby.health.check()
+    # {"status": "ok", "timestamp": "2026-06-24T12:00:00Z", "uptime": 1234.56}
+    ```
+    <Info>No authentication is required for health checks.</Info>
+  </Step>
+</Steps>
+
+---
+
+## Create an agent
+
+```python
+agent = await zaby.agents.create({
+    "name": "Support Agent",
+    "slug": "support-agent",
+    "description": "Handles customer support inquiries",
+})
+```
+
+<ResponseField name="id" type="string">Agent identifier</ResponseField>
+<ResponseField name="status" type="string">Always <code>"DRAFT"</code> initially</ResponseField>
+
+```
+✓ Agent created: a1b2c3d4-...
+✓ Status: DRAFT
+```
+
+---
+
+## Publish and deploy
+
+<Steps>
+  <Step title="Publish">
+    Creates a version snapshot of the agent.
+    ```python
+    version = await zaby.agents.publish(agent_id)
+    version_id = version["id"]
+    ```
+  </Step>
+
+  <Step title="Deploy">
+    ```python
+    deployment = await zaby.deployments.create(agent_id, {
+        "agentVersionId": version_id,
+        "environment": "TEST",
+    })
+    deployment_id = deployment["id"]
+    ```
+  </Step>
+
+  <Step title="Generate a runtime token">
+    ```python
+    app = await zaby.external_apps.create({
+        "name": "My App",
+        "slug": "my-app",
+        "allowedOrigins": ["http://localhost:3000"],
+        "tokenTtlSeconds": 600,
+    })
+
+    token = await zaby.runtime_tokens.create({
+        "externalAppId": app["id"],
+        "deploymentId": deployment_id,
+        "externalUserId": "user-1",
+        "externalSessionId": "session-1",
+        "ttlSeconds": 600,
+    })
+    ```
+  </Step>
+</Steps>
+
+---
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Configuration Guide" icon="cog" href="/configuration">
+    Timeouts, retries, auth providers, and environment setup.
+  </Card>
+  <Card title="Agents Client" icon="user" href="/agents-client">
+    Full agent lifecycle reference.
+  </Card>
+  <Card title="Runtime Client" icon="play" href="/runtime-client">
+    Start runs and stream agent responses.
+  </Card>
+  <Card title="Error Handling" icon="shield" href="/error-handling">
+    Error types, status codes, and retry strategies.
+  </Card>
+</CardGroup>

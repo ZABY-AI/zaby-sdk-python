@@ -14,13 +14,13 @@ def setup_function():
 
 class TestDynamicTokenProviders:
     async def test_api_key_from_callable(self):
-        transport = MockTransport([R("GET", "/api/v1/tenant/agents/usage", json_body={})])
+        transport = MockTransport([R("GET", "/api/v1/provisioning/agentic-os/agents/usage", json_body={})])
         zaby = Zaby(api_key=lambda: "key_from_fn", transport=transport)
         await zaby.usage.get_agent_usage()
         assert transport.requests[0].headers["x-zaby-api-key"] == "key_from_fn"
 
     async def test_access_token_from_callable(self):
-        transport = MockTransport([R("GET", "/api/v1/tenant/agents/usage", json_body={})])
+        transport = MockTransport([R("GET", "/api/v1/provisioning/agentic-os/agents/usage", json_body={})])
         zaby = Zaby(api_key="test", access_token=lambda: "tok_from_fn", transport=transport)
         await zaby.usage.get_agent_usage()
         assert transport.requests[0].headers["authorization"] == "Bearer tok_from_fn"
@@ -34,7 +34,7 @@ class TestDynamicTokenProviders:
     async def test_api_key_from_async_callable(self):
         async def async_key():
             return "async_key"
-        transport = MockTransport([R("GET", "/api/v1/tenant/agents/usage", json_body={})])
+        transport = MockTransport([R("GET", "/api/v1/provisioning/agentic-os/agents/usage", json_body={})])
         zaby = Zaby(api_key=async_key, transport=transport)
         await zaby.usage.get_agent_usage()
         assert transport.requests[0].headers["x-zaby-api-key"] == "async_key"
@@ -42,13 +42,13 @@ class TestDynamicTokenProviders:
 
 class TestZabyAuthHeaders:
     async def test_sends_api_key(self):
-        transport = MockTransport([R("GET", "/api/v1/tenant/agents/usage", json_body={})])
+        transport = MockTransport([R("GET", "/api/v1/provisioning/agentic-os/agents/usage", json_body={})])
         zaby = Zaby(api_key="zaby_pk_test", transport=transport)
         await zaby.usage.get_agent_usage()
         assert transport.requests[0].headers["x-zaby-api-key"] == "zaby_pk_test"
 
     async def test_sends_bearer_token(self):
-        transport = MockTransport([R("GET", "/api/v1/tenant/agents/usage", json_body={})])
+        transport = MockTransport([R("GET", "/api/v1/provisioning/agentic-os/agents/usage", json_body={})])
         zaby = Zaby(api_key="test", access_token="tenant_token", transport=transport)
         await zaby.usage.get_agent_usage()
         assert transport.requests[0].headers["authorization"] == "Bearer tenant_token"
@@ -64,32 +64,32 @@ class TestZabyRuntimeAuth:
 
 class TestClientRoutes:
     async def test_agents_create(self):
-        transport = MockTransport([R("POST", "/api/v1/tenant/agents", status=201, json_body={"id": "a1"})])
+        transport = MockTransport([R("POST", "/api/v1/provisioning/agentic-os/agents", status=201, json_body={"id": "a1"})])
         zaby = Zaby(api_key="test", transport=transport)
         await zaby.agents.create({"name": "test"})
-        assert transport.requests[0].path == "/api/v1/tenant/agents"
+        assert transport.requests[0].path == "/api/v1/provisioning/agentic-os/agents"
         assert transport.requests[0].method == "POST"
 
     async def test_agents_attach_mcp_tool(self):
-        transport = MockTransport([R("POST", "/api/v1/tenant/agents/a1/mcp-tools", json_body={})])
+        transport = MockTransport([R("POST", "/api/v1/provisioning/agentic-os/agents/a1/mcp-tools", json_body={})])
         zaby = Zaby(api_key="test", transport=transport)
         await zaby.agents.attach_mcp_tool("a1", {})
         assert "/mcp-tools" in transport.requests[0].path
 
     async def test_agents_attach_knowledge_base(self):
-        transport = MockTransport([R("POST", "/api/v1/tenant/agents/a1/knowledge-bases", json_body={})])
+        transport = MockTransport([R("POST", "/api/v1/provisioning/agentic-os/agents/a1/knowledge-bases", json_body={})])
         zaby = Zaby(api_key="test", transport=transport)
         await zaby.agents.attach_knowledge_base("a1", {})
         assert "/knowledge-bases" in transport.requests[0].path
 
     async def test_agents_publish(self):
-        transport = MockTransport([R("POST", "/api/v1/tenant/agents/a1/publish", json_body={})])
+        transport = MockTransport([R("POST", "/api/v1/provisioning/agentic-os/agents/a1/publish", json_body={})])
         zaby = Zaby(api_key="test", transport=transport)
         await zaby.agents.publish("a1")
         assert "/publish" in transport.requests[0].path
 
     async def test_agents_start_run(self):
-        transport = MockTransport([R("POST", "/api/v1/tenant/agents/a1/runs", json_body={})])
+        transport = MockTransport([R("POST", "/api/v1/provisioning/agentic-os/agents/a1/runs", json_body={})])
         zaby = Zaby(api_key="test", transport=transport)
         await zaby.agents.start_run("a1", {})
         assert "/runs" in transport.requests[0].path
@@ -99,41 +99,41 @@ class TestClientRoutes:
             "/api/v1/provisioning/managed-agents/external-apps/app_1/runtime-tokens",
             status=201, json_body={"token": "tok", "tokenType": "Bearer"})])
         zaby = Zaby(api_key="test", transport=transport)
-        await zaby.runtime_tokens.create(external_app_id="app_1", deployment_id="dep_1", ttl_seconds=600)
+        await zaby.runtime_tokens.create({"externalAppId": "app_1", "deploymentId": "dep_1", "ttlSeconds": 600})
         body = transport.requests[0].json_body
-        assert "external_app_id" not in body
-        assert body["deployment_id"] == "dep_1"
-        assert body["ttl_seconds"] == 600
+        assert "externalAppId" not in body
+        assert body["deploymentId"] == "dep_1"
+        assert body["ttlSeconds"] == 600
 
     async def test_mcp_list_catalog(self):
-        transport = MockTransport([R("GET", "/api/v1/tenant/mcp/catalog", json_body=[])])
+        transport = MockTransport([R("GET", "/api/v1/provisioning/agentic-os/mcp/catalog", json_body=[])])
         zaby = Zaby(api_key="test", transport=transport)
         await zaby.mcp.list_catalog()
-        assert transport.requests[0].path == "/api/v1/tenant/mcp/catalog"
+        assert transport.requests[0].path == "/api/v1/provisioning/agentic-os/mcp/catalog"
 
     async def test_knowledge_bases_retrieve(self):
-        transport = MockTransport([R("POST", "/api/v1/tenant/knowledge-bases/kb1/retrieve", json_body={})])
+        transport = MockTransport([R("POST", "/api/v1/provisioning/agentic-os/knowledge-bases/kb1/retrieve", json_body={})])
         zaby = Zaby(api_key="test", transport=transport)
         await zaby.knowledge_bases.retrieve("kb1", {"query": "q"})
-        assert transport.requests[0].path == "/api/v1/tenant/knowledge-bases/kb1/retrieve"
+        assert transport.requests[0].path == "/api/v1/provisioning/agentic-os/knowledge-bases/kb1/retrieve"
 
     async def test_memory_retrieve(self):
-        transport = MockTransport([R("POST", "/api/v1/tenant/agents/memory-retrievals", json_body={})])
+        transport = MockTransport([R("POST", "/api/v1/provisioning/agentic-os/agents/memory-retrievals", json_body={})])
         zaby = Zaby(api_key="test", transport=transport)
         await zaby.memory.retrieve({"text": "hello"})
-        assert transport.requests[0].path == "/api/v1/tenant/agents/memory-retrievals"
+        assert transport.requests[0].path == "/api/v1/provisioning/agentic-os/agents/memory-retrievals"
 
     async def test_usage_get_agent_usage(self):
-        transport = MockTransport([R("GET", "/api/v1/tenant/agents/usage?agentId=a1", json_body={})])
+        transport = MockTransport([R("GET", "/api/v1/provisioning/agentic-os/agents/usage?agentId=a1", json_body={})])
         zaby = Zaby(api_key="test", transport=transport)
         await zaby.usage.get_agent_usage(query={"agentId": "a1"})
         assert "agentId=a1" in transport.requests[0].path
 
     async def test_approvals_list(self):
-        transport = MockTransport([R("GET", "/api/v1/tenant/agents/approvals", json_body=[])])
+        transport = MockTransport([R("GET", "/api/v1/provisioning/agentic-os/agents/approvals", json_body=[])])
         zaby = Zaby(api_key="test", transport=transport)
         await zaby.approvals.list()
-        assert transport.requests[0].path == "/api/v1/tenant/agents/approvals"
+        assert transport.requests[0].path == "/api/v1/provisioning/agentic-os/agents/approvals"
 
 
 class TestRuntimeStream:
@@ -156,115 +156,193 @@ class TestExtendedClientRoutes:
         assert transport.requests[0].path == "/api/v1/provisioning/managed-agents/runs/r1/feedback"
 
     async def test_deployments_create(self):
-        transport = MockTransport([R("POST", "/api/v1/tenant/agents/a1/deployments", json_body={})])
+        transport = MockTransport([R("POST", "/api/v1/provisioning/agentic-os/agents/a1/deployments", json_body={})])
         zaby = Zaby(api_key="test", transport=transport)
         await zaby.deployments.create("a1", {"type": "managed"})
         assert "/deployments" in transport.requests[0].path
 
     async def test_deployments_get_provisioning(self):
-        transport = MockTransport([R("GET", "/api/v1/tenant/agents/deployments/d1/provisioning", json_body={})])
+        transport = MockTransport([R("GET", "/api/v1/provisioning/managed-agents/deployments/d1/provisioning", json_body={})])
         zaby = Zaby(api_key="test", transport=transport)
         await zaby.deployments.get_provisioning("d1")
         assert "/provisioning" in transport.requests[0].path
 
     async def test_intelligence_list_signals(self):
-        transport = MockTransport([R("GET", "/api/v1/tenant/agents/intelligence/signals", json_body=[])])
+        transport = MockTransport([R("GET", "/api/v1/provisioning/agentic-os/agents/intelligence/signals", json_body=[])])
         zaby = Zaby(api_key="test", transport=transport)
         await zaby.intelligence.list_signals(query={})
         assert "/intelligence/signals" in transport.requests[0].path
 
     async def test_intelligence_list_rollups(self):
-        transport = MockTransport([R("GET", "/api/v1/tenant/agents/intelligence/rollups", json_body=[])])
+        transport = MockTransport([R("GET", "/api/v1/provisioning/agentic-os/agents/intelligence/rollups", json_body=[])])
         zaby = Zaby(api_key="test", transport=transport)
         await zaby.intelligence.list_rollups()
         assert "/intelligence/rollups" in transport.requests[0].path
 
     async def test_intelligence_list_improvements(self):
-        transport = MockTransport([R("GET", "/api/v1/tenant/agents/intelligence/improvements", json_body=[])])
+        transport = MockTransport([R("GET", "/api/v1/provisioning/agentic-os/agents/intelligence/improvements", json_body=[])])
         zaby = Zaby(api_key="test", transport=transport)
         await zaby.intelligence.list_improvements()
         assert "/intelligence/improvements" in transport.requests[0].path
 
     async def test_intelligence_approve_improvement(self):
-        transport = MockTransport([R("POST", "/api/v1/tenant/agents/intelligence/improvements/c1/approve", json_body={})])
+        transport = MockTransport([R("POST", "/api/v1/provisioning/agentic-os/agents/intelligence/improvements/c1/approve", json_body={})])
         zaby = Zaby(api_key="test", transport=transport)
         await zaby.intelligence.approve_improvement("c1")
         assert "/approve" in transport.requests[0].path
 
     async def test_memory_list_items(self):
-        transport = MockTransport([R("GET", "/api/v1/tenant/agents/memory-items", json_body=[])])
+        transport = MockTransport([R("GET", "/api/v1/provisioning/agentic-os/agents/memory-items", json_body=[])])
         zaby = Zaby(api_key="test", transport=transport)
         await zaby.memory.list_items()
         assert "/memory-items" in transport.requests[0].path
 
     async def test_memory_get_item(self):
-        transport = MockTransport([R("GET", "/api/v1/tenant/agents/memory-items/m1", json_body={})])
+        transport = MockTransport([R("GET", "/api/v1/provisioning/agentic-os/agents/memory-items/m1", json_body={})])
         zaby = Zaby(api_key="test", transport=transport)
         await zaby.memory.get_item("m1")
         assert transport.requests[0].path.endswith("/m1")
 
     async def test_memory_list_candidates(self):
-        transport = MockTransport([R("GET", "/api/v1/tenant/agents/memory-candidates", json_body=[])])
+        transport = MockTransport([R("GET", "/api/v1/provisioning/agentic-os/agents/memory-candidates", json_body=[])])
         zaby = Zaby(api_key="test", transport=transport)
         await zaby.memory.list_candidates()
         assert "/memory-candidates" in transport.requests[0].path
 
     async def test_memory_approve_candidate(self):
-        transport = MockTransport([R("POST", "/api/v1/tenant/agents/memory-candidates/c1/approve", json_body={})])
+        transport = MockTransport([R("POST", "/api/v1/provisioning/agentic-os/agents/memory-candidates/c1/approve", json_body={})])
         zaby = Zaby(api_key="test", transport=transport)
         await zaby.memory.approve_candidate("c1")
         assert "/approve" in transport.requests[0].path
 
     async def test_memory_disable_item(self):
-        transport = MockTransport([R("PATCH", "/api/v1/tenant/agents/memory-items/m1/disable", json_body={})])
+        transport = MockTransport([R("PATCH", "/api/v1/provisioning/agentic-os/agents/memory-items/m1/disable", json_body={})])
         zaby = Zaby(api_key="test", transport=transport)
         await zaby.memory.disable_item("m1")
         assert "/disable" in transport.requests[0].path
 
     async def test_memory_delete_item(self):
-        transport = MockTransport([R("DELETE", "/api/v1/tenant/agents/memory-items/m1", json_body={})])
+        transport = MockTransport([R("DELETE", "/api/v1/provisioning/agentic-os/agents/memory-items/m1", json_body={})])
         zaby = Zaby(api_key="test", transport=transport)
         await zaby.memory.delete_item("m1")
         assert transport.requests[0].method == "DELETE"
 
     async def test_mcp_create_server(self):
-        transport = MockTransport([R("POST", "/api/v1/tenant/mcp/servers", json_body={})])
+        transport = MockTransport([R("POST", "/api/v1/provisioning/agentic-os/mcp/servers", json_body={})])
         zaby = Zaby(api_key="test", transport=transport)
         await zaby.mcp.create_server({"name": "s1"})
         assert "/mcp/servers" in transport.requests[0].path
 
     async def test_mcp_install_server(self):
-        transport = MockTransport([R("POST", "/api/v1/tenant/mcp/installations", json_body={})])
+        transport = MockTransport([R("POST", "/api/v1/provisioning/agentic-os/mcp/installations", json_body={})])
         zaby = Zaby(api_key="test", transport=transport)
         await zaby.mcp.install_server({"serverId": "s1"})
         assert "/mcp/installations" in transport.requests[0].path
 
     async def test_mcp_discover_tools(self):
-        transport = MockTransport([R("POST", "/api/v1/tenant/mcp/servers/s1/discover-tools", json_body={})])
+        transport = MockTransport([R("POST", "/api/v1/provisioning/agentic-os/mcp/servers/s1/discover-tools", json_body={})])
         zaby = Zaby(api_key="test", transport=transport)
         await zaby.mcp.discover_tools("s1")
         assert "/discover-tools" in transport.requests[0].path
 
+    async def test_mcp_get_server(self):
+        transport = MockTransport([R("GET", "/api/v1/provisioning/agentic-os/mcp/servers/s1", json_body={})])
+        zaby = Zaby(api_key="test", transport=transport)
+        await zaby.mcp.get_server("s1")
+        assert transport.requests[0].method == "GET"
+
+    async def test_mcp_update_server(self):
+        transport = MockTransport([R("PATCH", "/api/v1/provisioning/agentic-os/mcp/servers/s1", json_body={})])
+        zaby = Zaby(api_key="test", transport=transport)
+        await zaby.mcp.update_server("s1", {"name": "new"})
+        assert transport.requests[0].method == "PATCH"
+
+    async def test_mcp_list_installations(self):
+        transport = MockTransport([R("GET", "/api/v1/provisioning/agentic-os/mcp/installations", json_body=[])])
+        zaby = Zaby(api_key="test", transport=transport)
+        await zaby.mcp.list_installations()
+        assert transport.requests[0].method == "GET"
+
+    async def test_mcp_update_installation(self):
+        transport = MockTransport([R("PATCH", "/api/v1/provisioning/agentic-os/mcp/installations/i1", json_body={})])
+        zaby = Zaby(api_key="test", transport=transport)
+        await zaby.mcp.update_installation("i1", {"status": "active"})
+        assert transport.requests[0].method == "PATCH"
+
+    async def test_mcp_revoke_installation(self):
+        transport = MockTransport([R("DELETE", "/api/v1/provisioning/agentic-os/mcp/installations/i1", json_body={})])
+        zaby = Zaby(api_key="test", transport=transport)
+        await zaby.mcp.revoke_installation("i1")
+        assert transport.requests[0].method == "DELETE"
+
+    async def test_mcp_list_installation_tools(self):
+        transport = MockTransport([R("GET", "/api/v1/provisioning/agentic-os/mcp/installations/i1/tools", json_body=[])])
+        zaby = Zaby(api_key="test", transport=transport)
+        await zaby.mcp.list_installation_tools("i1")
+        assert "/tools" in transport.requests[0].path
+
+    async def test_mcp_update_tool_policy(self):
+        transport = MockTransport([R("PATCH", "/api/v1/provisioning/agentic-os/mcp/installations/i1/tools/t1/policy", json_body={})])
+        zaby = Zaby(api_key="test", transport=transport)
+        await zaby.mcp.update_tool_policy("i1", "t1", {"policy": "strict"})
+        assert "/policy" in transport.requests[0].path
+
+    async def test_mcp_preflight_invocation(self):
+        transport = MockTransport([R("POST", "/api/v1/provisioning/agentic-os/mcp/installations/i1/tools/search/preflight", json_body={})])
+        zaby = Zaby(api_key="test", transport=transport)
+        await zaby.mcp.preflight_invocation("i1", "search", {})
+        assert "/preflight" in transport.requests[0].path
+
+    async def test_mcp_invoke_tool(self):
+        transport = MockTransport([R("POST", "/api/v1/provisioning/agentic-os/mcp/installations/i1/tools/search/invoke", json_body={})])
+        zaby = Zaby(api_key="test", transport=transport)
+        await zaby.mcp.invoke_tool("i1", "search", {})
+        assert "/invoke" in transport.requests[0].path
+
+    async def test_mcp_create_credential_binding(self):
+        transport = MockTransport([R("POST", "/api/v1/provisioning/agentic-os/mcp/installations/i1/credential-bindings", json_body={})])
+        zaby = Zaby(api_key="test", transport=transport)
+        await zaby.mcp.create_credential_binding("i1", {})
+        assert "/credential-bindings" in transport.requests[0].path
+
+    async def test_mcp_delete_credential_binding(self):
+        transport = MockTransport([R("DELETE", "/api/v1/provisioning/agentic-os/mcp/credential-bindings/b1", json_body={})])
+        zaby = Zaby(api_key="test", transport=transport)
+        await zaby.mcp.delete_credential_binding("b1")
+        assert transport.requests[0].method == "DELETE"
+
+    async def test_mcp_upsert_auth_policy(self):
+        transport = MockTransport([R("POST", "/api/v1/provisioning/agentic-os/mcp/installations/i1/auth-policies", json_body={})])
+        zaby = Zaby(api_key="test", transport=transport)
+        await zaby.mcp.upsert_auth_policy("i1", {})
+        assert "/auth-policies" in transport.requests[0].path
+
+    async def test_mcp_grant_access(self):
+        transport = MockTransport([R("POST", "/api/v1/provisioning/agentic-os/mcp/installations/i1/access-grants", json_body={})])
+        zaby = Zaby(api_key="test", transport=transport)
+        await zaby.mcp.grant_access("i1", {})
+        assert "/access-grants" in transport.requests[0].path
+
     async def test_knowledge_bases_create(self):
-        transport = MockTransport([R("POST", "/api/v1/tenant/knowledge-bases", json_body={})])
+        transport = MockTransport([R("POST", "/api/v1/provisioning/agentic-os/knowledge-bases", json_body={})])
         zaby = Zaby(api_key="test", transport=transport)
         await zaby.knowledge_bases.create({"name": "KB"})
-        assert transport.requests[0].path == "/api/v1/tenant/knowledge-bases"
+        assert transport.requests[0].path == "/api/v1/provisioning/agentic-os/knowledge-bases"
 
     async def test_knowledge_bases_upload_text(self):
-        transport = MockTransport([R("POST", "/api/v1/tenant/knowledge-bases/kb1/documents/text", json_body={})])
+        transport = MockTransport([R("POST", "/api/v1/provisioning/agentic-os/knowledge-bases/kb1/documents/text", json_body={})])
         zaby = Zaby(api_key="test", transport=transport)
         await zaby.knowledge_bases.upload_text_document("kb1", {"content": "text"})
         assert "/documents/text" in transport.requests[0].path
 
     async def test_knowledge_bases_provisional_answer(self):
-        transport = MockTransport([R("POST", "/api/v1/tenant/knowledge-bases/kb1/provisional-answer", json_body={})])
+        transport = MockTransport([R("POST", "/api/v1/provisioning/agentic-os/knowledge-bases/kb1/provisional-answer", json_body={})])
         zaby = Zaby(api_key="test", transport=transport)
         await zaby.knowledge_bases.provisional_answer("kb1", {"query": "q"})
         assert "/provisional-answer" in transport.requests[0].path
 
     async def test_approvals_reject(self):
-        transport = MockTransport([R("POST", "/api/v1/tenant/agents/runs/r1/approvals/a1/reject", json_body={})])
+        transport = MockTransport([R("POST", "/api/v1/provisioning/agentic-os/agents/runs/r1/approvals/a1/reject", json_body={})])
         zaby = Zaby(api_key="test", transport=transport)
         await zaby.approvals.reject("r1", "a1")
         assert "/reject" in transport.requests[0].path
@@ -282,58 +360,88 @@ class TestExtendedClientRoutes:
         assert "/runs/r1/events" in transport.requests[0].path
 
     async def test_agents_deploy(self):
-        transport = MockTransport([R("POST", "/api/v1/tenant/agents/a1/deployments", json_body={})])
+        transport = MockTransport([R("POST", "/api/v1/provisioning/agentic-os/agents/a1/deployments", json_body={})])
         zaby = Zaby(api_key="test", transport=transport)
         await zaby.agents.deploy("a1", {"type": "managed"})
         assert "/deployments" in transport.requests[0].path
 
     async def test_agents_get_run_progress(self):
-        transport = MockTransport([R("GET", "/api/v1/tenant/agents/runs/r1/progress", json_body={})])
+        transport = MockTransport([R("GET", "/api/v1/provisioning/agentic-os/agents/runs/r1/progress", json_body={})])
         zaby = Zaby(api_key="test", transport=transport)
         await zaby.agents.get_run_progress("r1")
         assert "/progress" in transport.requests[0].path
 
     async def test_agents_list_run_events(self):
-        transport = MockTransport([R("GET", "/api/v1/tenant/agents/runs/r1/events", json_body=[])])
+        transport = MockTransport([R("GET", "/api/v1/provisioning/agentic-os/agents/runs/r1/events", json_body=[])])
         zaby = Zaby(api_key="test", transport=transport)
         await zaby.agents.list_run_events("r1")
         assert "/runs/r1/events" in transport.requests[0].path
 
     async def test_agents_attach_skill(self):
-        transport = MockTransport([R("POST", "/api/v1/tenant/agents/a1/skills", json_body={})])
+        transport = MockTransport([R("POST", "/api/v1/provisioning/agentic-os/agents/a1/skills", json_body={})])
         zaby = Zaby(api_key="test", transport=transport)
         await zaby.agents.attach_skill("a1", {"skill": "s1"})
         assert "/skills" in transport.requests[0].path
 
     async def test_external_apps_list(self):
-        transport = MockTransport([R("GET", "/api/v1/tenant/agents/external-apps", json_body=[])])
+        transport = MockTransport([R("GET", "/api/v1/provisioning/managed-agents/external-apps", json_body=[])])
         zaby = Zaby(api_key="test", transport=transport)
         await zaby.external_apps.list()
         assert "/external-apps" in transport.requests[0].path
 
     async def test_external_apps_get(self):
-        transport = MockTransport([R("GET", "/api/v1/tenant/agents/external-apps/app1", json_body={})])
+        transport = MockTransport([R("GET", "/api/v1/provisioning/managed-agents/external-apps/app1", json_body={})])
         zaby = Zaby(api_key="test", transport=transport)
         await zaby.external_apps.get("app1")
         assert transport.requests[0].path.endswith("/app1")
 
     async def test_external_apps_update(self):
-        transport = MockTransport([R("PATCH", "/api/v1/tenant/agents/external-apps/app1", json_body={})])
+        transport = MockTransport([R("PATCH", "/api/v1/provisioning/managed-agents/external-apps/app1", json_body={})])
         zaby = Zaby(api_key="test", transport=transport)
         await zaby.external_apps.update("app1", {"name": "new"})
         assert transport.requests[0].method == "PATCH"
 
+    async def test_agents_playground_runtime_tokens(self):
+        transport = MockTransport([R("GET", "/api/v1/provisioning/agentic-os/agents/a1/playground/runtime-tokens", json_body=[])])
+        zaby = Zaby(api_key="test", transport=transport)
+        await zaby.agents.playground_runtime_tokens("a1")
+        assert "/playground/runtime-tokens" in transport.requests[0].path
+
+    async def test_agents_test_run(self):
+        transport = MockTransport([R("POST", "/api/v1/provisioning/agentic-os/agents/a1/test-runs", json_body={})])
+        zaby = Zaby(api_key="test", transport=transport)
+        await zaby.agents.test_run("a1", {"input": "hello"})
+        assert "/test-runs" in transport.requests[0].path
+
+    async def test_external_apps_create(self):
+        transport = MockTransport([R("POST", "/api/v1/provisioning/managed-agents/external-apps", json_body={})])
+        zaby = Zaby(api_key="test", transport=transport)
+        await zaby.external_apps.create({"name": "app"})
+        assert transport.requests[0].method == "POST"
+
+    async def test_intelligence_reject_improvement(self):
+        transport = MockTransport([R("POST", "/api/v1/provisioning/agentic-os/agents/intelligence/improvements/c1/reject", json_body={})])
+        zaby = Zaby(api_key="test", transport=transport)
+        await zaby.intelligence.reject_improvement("c1")
+        assert "/reject" in transport.requests[0].path
+
+    async def test_memory_reject_candidate(self):
+        transport = MockTransport([R("POST", "/api/v1/provisioning/agentic-os/agents/memory-candidates/c1/reject", json_body={})])
+        zaby = Zaby(api_key="test", transport=transport)
+        await zaby.memory.reject_candidate("c1")
+        assert "/reject" in transport.requests[0].path
+
     async def test_external_apps_bind_deployment(self):
-        transport = MockTransport([R("POST", "/api/v1/tenant/agents/external-apps/app1/deployments", json_body={})])
+        transport = MockTransport([R("POST", "/api/v1/provisioning/managed-agents/external-apps/app1/deployments", json_body={})])
         zaby = Zaby(api_key="test", transport=transport)
         await zaby.external_apps.bind_deployment("app1", {"deploymentId": "d1"})
         assert "/deployments" in transport.requests[0].path
 
     async def test_knowledge_bases_source_groups(self):
         transport = MockTransport([
-            R("GET", "/api/v1/tenant/knowledge-bases/kb1/source-groups", json_body=[]),
-            R("POST", "/api/v1/tenant/knowledge-bases/kb1/source-groups", json_body={}),
-            R("PATCH", "/api/v1/tenant/knowledge-bases/kb1/source-groups/sg1", json_body={}),
+            R("GET", "/api/v1/provisioning/agentic-os/knowledge-bases/kb1/source-groups", json_body=[]),
+            R("POST", "/api/v1/provisioning/agentic-os/knowledge-bases/kb1/source-groups", json_body={}),
+            R("PATCH", "/api/v1/provisioning/agentic-os/knowledge-bases/kb1/source-groups/sg1", json_body={}),
         ])
         zaby = Zaby(api_key="test", transport=transport)
         await zaby.knowledge_bases.list_source_groups("kb1")
@@ -343,8 +451,8 @@ class TestExtendedClientRoutes:
 
     async def test_knowledge_bases_sources_crud(self):
         transport = MockTransport([
-            R("POST", "/api/v1/tenant/knowledge-bases/kb1/sources", json_body={}),
-            R("POST", "/api/v1/tenant/knowledge-bases/kb1/sources/s1/reprocess", json_body={}),
+            R("POST", "/api/v1/provisioning/agentic-os/knowledge-bases/kb1/sources", json_body={}),
+            R("POST", "/api/v1/provisioning/agentic-os/knowledge-bases/kb1/sources/s1/reprocess", json_body={}),
         ])
         zaby = Zaby(api_key="test", transport=transport)
         await zaby.knowledge_bases.create_source("kb1", {"url": "https://example.com"})
@@ -353,8 +461,8 @@ class TestExtendedClientRoutes:
 
     async def test_knowledge_bases_ingestion_policies(self):
         transport = MockTransport([
-            R("GET", "/api/v1/tenant/knowledge-bases/kb1/ingestion-policies", json_body=[]),
-            R("POST", "/api/v1/tenant/knowledge-bases/kb1/ingestion-policies", json_body={}),
+            R("GET", "/api/v1/provisioning/agentic-os/knowledge-bases/kb1/ingestion-policies", json_body=[]),
+            R("POST", "/api/v1/provisioning/agentic-os/knowledge-bases/kb1/ingestion-policies", json_body={}),
         ])
         zaby = Zaby(api_key="test", transport=transport)
         await zaby.knowledge_bases.list_ingestion_policies("kb1")
@@ -362,16 +470,16 @@ class TestExtendedClientRoutes:
         assert "/ingestion-policies" in transport.requests[1].path
 
     async def test_knowledge_bases_profiles(self):
-        transport = MockTransport([R("GET", "/api/v1/tenant/knowledge-bases/kb1/profiles", json_body=[])])
+        transport = MockTransport([R("GET", "/api/v1/provisioning/agentic-os/knowledge-bases/kb1/profiles", json_body=[])])
         zaby = Zaby(api_key="test", transport=transport)
         await zaby.knowledge_bases.list_profiles("kb1")
         assert "/profiles" in transport.requests[0].path
 
     async def test_knowledge_bases_jobs(self):
         transport = MockTransport([
-            R("GET", "/api/v1/tenant/knowledge-bases/kb1/idocs-jobs", json_body=[]),
-            R("GET", "/api/v1/tenant/knowledge-bases/kb1/idocs-jobs/j1", json_body={}),
-            R("POST", "/api/v1/tenant/knowledge-bases/kb1/idocs-jobs/j1/cancel", json_body={}),
+            R("GET", "/api/v1/provisioning/agentic-os/knowledge-bases/kb1/idocs-jobs", json_body=[]),
+            R("GET", "/api/v1/provisioning/agentic-os/knowledge-bases/kb1/idocs-jobs/j1", json_body={}),
+            R("POST", "/api/v1/provisioning/agentic-os/knowledge-bases/kb1/idocs-jobs/j1/cancel", json_body={}),
         ])
         zaby = Zaby(api_key="test", transport=transport)
         await zaby.knowledge_bases.list_jobs("kb1")
@@ -381,15 +489,174 @@ class TestExtendedClientRoutes:
         assert transport.requests[1].path.endswith("/j1")
         assert "/cancel" in transport.requests[2].path
 
+    async def test_knowledge_bases_create_library_text_document(self):
+        transport = MockTransport([R("POST", "/api/v1/provisioning/agentic-os/knowledge-library/documents/text", json_body={})])
+        zaby = Zaby(api_key="test", transport=transport)
+        await zaby.knowledge_bases.create_library_text_document({"content": "text"})
+        assert transport.requests[0].method == "POST"
+
+    async def test_knowledge_bases_list_library_documents(self):
+        transport = MockTransport([R("GET", "/api/v1/provisioning/agentic-os/knowledge-library/documents", json_body=[])])
+        zaby = Zaby(api_key="test", transport=transport)
+        await zaby.knowledge_bases.list_library_documents({"limit": 10})
+        assert "/knowledge-library/documents" in transport.requests[0].path
+
+    async def test_knowledge_bases_list_library_document_findings(self):
+        transport = MockTransport([R("GET", "/api/v1/provisioning/agentic-os/knowledge-library/documents/doc1/findings", json_body=[])])
+        zaby = Zaby(api_key="test", transport=transport)
+        await zaby.knowledge_bases.list_library_document_findings("doc1")
+        assert "/findings" in transport.requests[0].path
+
+    async def test_knowledge_bases_link_library_document(self):
+        transport = MockTransport([R("POST", "/api/v1/provisioning/agentic-os/knowledge-bases/kb1/library-documents", json_body={})])
+        zaby = Zaby(api_key="test", transport=transport)
+        await zaby.knowledge_bases.link_library_document("kb1", {"documentId": "doc1"})
+        assert "/library-documents" in transport.requests[0].path
+
+    async def test_knowledge_bases_project_library_document(self):
+        transport = MockTransport([R("POST", "/api/v1/provisioning/agentic-os/knowledge-bases/kb1/library-documents/sel1/project", json_body={})])
+        zaby = Zaby(api_key="test", transport=transport)
+        await zaby.knowledge_bases.project_library_document("kb1", "sel1", {"fields": ["title"]})
+        assert "/project" in transport.requests[0].path
+
+    async def test_knowledge_bases_list_sources(self):
+        transport = MockTransport([R("GET", "/api/v1/provisioning/agentic-os/knowledge-bases/kb1/sources", json_body=[])])
+        zaby = Zaby(api_key="test", transport=transport)
+        await zaby.knowledge_bases.list_sources("kb1")
+        assert "/sources" in transport.requests[0].path
+
+    async def test_knowledge_bases_update_source(self):
+        transport = MockTransport([R("PATCH", "/api/v1/provisioning/agentic-os/knowledge-bases/kb1/sources/s1", json_body={})])
+        zaby = Zaby(api_key="test", transport=transport)
+        await zaby.knowledge_bases.update_source("kb1", "s1", {"name": "new"})
+        assert transport.requests[0].method == "PATCH"
+
+    async def test_knowledge_bases_link_source_credential(self):
+        transport = MockTransport([R("POST", "/api/v1/provisioning/agentic-os/knowledge-bases/kb1/sources/s1/auth", json_body={})])
+        zaby = Zaby(api_key="test", transport=transport)
+        await zaby.knowledge_bases.link_source_credential("kb1", "s1", {"credentialId": "c1"})
+        assert "/auth" in transport.requests[0].path
+
+    async def test_knowledge_bases_update_ingestion_policy(self):
+        transport = MockTransport([R("PATCH", "/api/v1/provisioning/agentic-os/knowledge-bases/kb1/ingestion-policies/p1", json_body={})])
+        zaby = Zaby(api_key="test", transport=transport)
+        await zaby.knowledge_bases.update_ingestion_policy("kb1", "p1", {"schedule": "weekly"})
+        assert transport.requests[0].method == "PATCH"
+
+    async def test_knowledge_bases_upsert_governance_policy(self):
+        transport = MockTransport([R("POST", "/api/v1/provisioning/agentic-os/knowledge-bases/kb1/governance-policy", json_body={})])
+        zaby = Zaby(api_key="test", transport=transport)
+        await zaby.knowledge_bases.upsert_governance_policy("kb1", {"policy": "strict"})
+        assert "/governance-policy" in transport.requests[0].path
+
+    async def test_knowledge_bases_create_profile(self):
+        transport = MockTransport([R("POST", "/api/v1/provisioning/agentic-os/knowledge-bases/kb1/profiles", json_body={})])
+        zaby = Zaby(api_key="test", transport=transport)
+        await zaby.knowledge_bases.create_profile("kb1", {"name": "profile1"})
+        assert transport.requests[0].method == "POST"
+
+    async def test_knowledge_bases_update_profile(self):
+        transport = MockTransport([R("PATCH", "/api/v1/provisioning/agentic-os/knowledge-bases/kb1/profiles/pr1", json_body={})])
+        zaby = Zaby(api_key="test", transport=transport)
+        await zaby.knowledge_bases.update_profile("kb1", "pr1", {"name": "new"})
+        assert transport.requests[0].method == "PATCH"
+
     async def test_client_surface_no_extra_methods(self):
         transport = MockTransport()
         zaby = Zaby(api_key="pk_test", transport=transport)
         assert not hasattr(zaby.deployments, "list")
         assert not hasattr(zaby.runtime_tokens, "list")
+        assert not hasattr(zaby.runtime_token_families, "create")
+        assert not hasattr(zaby.runtime_token_policies, "delete")
+        assert not hasattr(zaby.runtime_token_grants, "list")
+        assert not hasattr(zaby.runtime_token_usage, "create")
         assert not hasattr(zaby.memory, "query")
         assert not hasattr(zaby.intelligence, "query")
         runtime = ZabyRuntime(token="rt_test", transport=transport)
         assert not hasattr(runtime.approvals, "list")
+
+
+class TestRuntimeTokenSubClients:
+    async def test_runtime_token_families_list(self):
+        transport = MockTransport([R("GET", "/api/v1/provisioning/managed-agents/runtime-token-families", json_body=[])])
+        zaby = Zaby(api_key="test", transport=transport)
+        await zaby.runtime_token_families.list()
+        assert transport.requests[0].path == "/api/v1/provisioning/managed-agents/runtime-token-families"
+
+    async def test_runtime_token_families_revoke(self):
+        transport = MockTransport([R("POST", "/api/v1/provisioning/managed-agents/runtime-token-families/f1/revoke", json_body={})])
+        zaby = Zaby(api_key="test", transport=transport)
+        await zaby.runtime_token_families.revoke("f1")
+        assert "/revoke" in transport.requests[0].path
+
+    async def test_runtime_token_policies_list(self):
+        transport = MockTransport([R("GET", "/api/v1/provisioning/managed-agents/runtime-token-policies", json_body=[])])
+        zaby = Zaby(api_key="test", transport=transport)
+        await zaby.runtime_token_policies.list()
+        assert transport.requests[0].path == "/api/v1/provisioning/managed-agents/runtime-token-policies"
+
+    async def test_runtime_token_policies_create(self):
+        transport = MockTransport([R("POST", "/api/v1/provisioning/managed-agents/runtime-token-policies", json_body={})])
+        zaby = Zaby(api_key="test", transport=transport)
+        await zaby.runtime_token_policies.create({"name": "policy"})
+        assert transport.requests[0].method == "POST"
+
+    async def test_runtime_token_policies_get(self):
+        transport = MockTransport([R("GET", "/api/v1/provisioning/managed-agents/runtime-token-policies/p1", json_body={})])
+        zaby = Zaby(api_key="test", transport=transport)
+        await zaby.runtime_token_policies.get("p1")
+        assert transport.requests[0].path.endswith("/p1")
+
+    async def test_runtime_token_policies_update(self):
+        transport = MockTransport([R("PATCH", "/api/v1/provisioning/managed-agents/runtime-token-policies/p1", json_body={})])
+        zaby = Zaby(api_key="test", transport=transport)
+        await zaby.runtime_token_policies.update("p1", {"status": "ACTIVE"})
+        assert transport.requests[0].method == "PATCH"
+
+    async def test_runtime_token_grants_revoke(self):
+        transport = MockTransport([R("POST", "/api/v1/provisioning/managed-agents/runtime-token-grants/g1/revoke", json_body={})])
+        zaby = Zaby(api_key="test", transport=transport)
+        await zaby.runtime_token_grants.revoke("g1", {"reason": "test"})
+        assert "/revoke" in transport.requests[0].path
+
+    async def test_runtime_token_usage_get(self):
+        transport = MockTransport([R("GET", "/api/v1/provisioning/managed-agents/runtime-token-usage", json_body={})])
+        zaby = Zaby(api_key="test", transport=transport)
+        await zaby.runtime_token_usage.get({"agentId": "a1"})
+        assert "/runtime-token-usage" in transport.requests[0].path
+        assert "agentId=a1" in transport.requests[0].path
+
+    async def test_runtime_tokens_rotate(self):
+        transport = MockTransport([R("POST", "/api/v1/provisioning/managed-agents/runtime-tokens/rotate", json_body={})])
+        zaby = Zaby(api_key="test", transport=transport)
+        await zaby.runtime_tokens.rotate({"previousToken": "tok_123"})
+        assert transport.requests[0].method == "POST"
+        assert transport.requests[0].path == "/api/v1/provisioning/managed-agents/runtime-tokens/rotate"
+        assert transport.requests[0].json_body["previousToken"] == "tok_123"
+
+    async def test_runtime_tokens_rotate_by_unique_id(self):
+        transport = MockTransport([R("POST",
+            "/api/v1/provisioning/managed-agents/external-apps/app1/runtime-tokens/rotate",
+            json_body={})])
+        zaby = Zaby(api_key="test", transport=transport)
+        await zaby.runtime_tokens.rotate_by_unique_id({
+            "externalAppId": "app1",
+            "deploymentId": "dep1",
+            "uniqueId": "uid_1",
+        })
+        body = transport.requests[0].json_body
+        assert "externalAppId" not in body
+        assert body["deploymentId"] == "dep1"
+        assert body["uniqueId"] == "uid_1"
+
+    async def test_runtime_tokens_revoke_family(self):
+        transport = MockTransport([R("POST",
+            "/api/v1/provisioning/managed-agents/runtime-token-families/fam1/revoke",
+            json_body={})])
+        zaby = Zaby(api_key="test", transport=transport)
+        await zaby.runtime_tokens.revoke_family("fam1", {"reason": "test"})
+        assert "/revoke" in transport.requests[0].path
+        assert transport.requests[0].json_body["reason"] == "test"
 
 
 class TestRuntimeClientRoutes:
@@ -426,7 +693,7 @@ class TestPublicExports:
         assert callable(configure_zaby)
         assert callable(Zaby)
         assert callable(ZabyRuntime)
-        assert DEFAULT_ZABY_API_ORIGIN == "https://genapi.zaby.io"
+        assert DEFAULT_ZABY_API_ORIGIN == "http://192.168.68.61:9080"
         assert LOCAL_ZABY_API_ORIGIN == "http://localhost:9080"
 
 
@@ -439,6 +706,10 @@ class TestIntegration:
         assert hasattr(zaby, "deployments")
         assert hasattr(zaby, "external_apps")
         assert hasattr(zaby, "runtime_tokens")
+        assert hasattr(zaby, "runtime_token_families")
+        assert hasattr(zaby, "runtime_token_policies")
+        assert hasattr(zaby, "runtime_token_grants")
+        assert hasattr(zaby, "runtime_token_usage")
         assert hasattr(zaby, "knowledge_bases")
         assert hasattr(zaby, "mcp")
         assert hasattr(zaby, "memory")
