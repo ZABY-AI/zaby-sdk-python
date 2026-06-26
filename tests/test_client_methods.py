@@ -693,7 +693,7 @@ class TestPublicExports:
         assert callable(configure_zaby)
         assert callable(Zaby)
         assert callable(ZabyRuntime)
-        assert DEFAULT_ZABY_API_ORIGIN == "http://192.168.68.61:9080"
+        assert DEFAULT_ZABY_API_ORIGIN == "https://genapi.zaby.io"
         assert LOCAL_ZABY_API_ORIGIN == "http://localhost:9080"
 
 
